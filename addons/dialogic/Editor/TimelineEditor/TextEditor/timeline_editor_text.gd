@@ -4,7 +4,7 @@ extends CodeEdit
 ## Sub-Editor that allows editing timelines in a text format.
 
 @onready var timeline_editor := get_parent().get_parent()
-@onready var code_completion_helper :Node= find_parent('EditorsManager').get_node('CodeCompletionHelper') 
+@onready var code_completion_helper :Node= find_parent('EditorsManager').get_node('CodeCompletionHelper')
 
 var label_regex := RegEx.create_from_string('label +(?<name>[^\n]+)')
 
@@ -12,6 +12,7 @@ func _ready():
 	await find_parent('EditorView').ready
 	syntax_highlighter = code_completion_helper.syntax_highlighter
 	timeline_editor.editors_manager.sidebar.content_item_activated.connect(_on_content_item_clicked)
+
 
 func _on_text_editor_text_changed():
 	timeline_editor.current_resource_state = DialogicEditor.ResourceStates.UNSAVED
@@ -26,10 +27,12 @@ func clear_timeline():
 
 func load_timeline(timeline:DialogicTimeline) -> void:
 	clear_timeline()
-	
+
 	text = timeline.as_text()
-	
+
 	timeline_editor.current_resource.set_meta("timeline_not_saved", false)
+	clear_undo_history()
+
 	await get_tree().process_frame
 	update_content_list()
 
@@ -37,31 +40,31 @@ func load_timeline(timeline:DialogicTimeline) -> void:
 func save_timeline():
 	if !timeline_editor.current_resource:
 		return
-	
-	var text_array:Array = text_timeline_to_array(text)
-	
+
+	var text_array: Array = text_timeline_to_array(text)
+
 	timeline_editor.current_resource.events = text_array
 	timeline_editor.current_resource.events_processed = false
 	ResourceSaver.save(timeline_editor.current_resource, timeline_editor.current_resource.resource_path)
 
 	timeline_editor.current_resource.set_meta("timeline_not_saved", false)
 	timeline_editor.current_resource_state = DialogicEditor.ResourceStates.SAVED
-	timeline_editor.editors_manager.resource_helper.rebuild_timeline_directory()
+	DialogicResourceUtil.update_directory('dtl')
 
 
 func text_timeline_to_array(text:String) -> Array:
 	# Parse the lines down into an array
 	var events := []
-	
+
 	var lines := text.split('\n', true)
 	var idx := -1
-	
+
 	while idx < len(lines)-1:
 		idx += 1
 		var line :String = lines[idx]
 		var line_stripped :String = line.strip_edges(true, true)
 		events.append(line)
-	
+
 	return events
 
 
@@ -151,7 +154,7 @@ func duplicate_line() -> void:
 
 	var lines := text.split("\n")
 	var lines_to_dupl: PackedStringArray = lines.slice(from, to)
-	
+
 	text = "\n".join(lines.slice(0, from)+lines_to_dupl+lines.slice(from))
 
 	set_caret_line(cursor.y+to-from)
@@ -165,12 +168,19 @@ func _can_drop_data(at_position:Vector2, data:Variant) -> bool:
 		return true
 	return false
 
+
 # Allows dragging files into the editor
 func _drop_data(at_position:Vector2, data:Variant) -> void:
 	if typeof(data) == TYPE_DICTIONARY and 'files' in data.keys() and len(data.files) == 1:
 		set_caret_column(get_line_column_at_pos(at_position).x)
 		set_caret_line(get_line_column_at_pos(at_position).y)
-		insert_text_at_caret('"'+data.files[0]+'"')
+		var result: String = data.files[0]
+		if get_line(get_caret_line())[get_caret_column()-1] != '"':
+			result = '"'+result
+		if get_line(get_caret_line())[get_caret_column()] != '"':
+			result = result+'"'
+
+		insert_text_at_caret(result)
 
 
 func _on_update_timer_timeout():
@@ -190,7 +200,7 @@ func _on_content_item_clicked(label:String) -> void:
 		set_caret_column(0)
 		adjust_viewport_to_caret()
 		return
-	
+
 	for i in label_regex.search_all(text):
 		if i.get_string('name') == label:
 			set_caret_column(0)
