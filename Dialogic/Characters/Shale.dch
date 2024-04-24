@@ -1,22 +1,23 @@
 {
 "@path": "res://addons/dialogic/Resources/character.gd",
 "@subpath": NodePath(""),
-"color": Color(0.32547, 0.503687, 0.925781, 1),
+"_translation_id": "",
+"color": Color(0.568871, 0.0357056, 0.761719, 1),
 "custom_info": {
 "sound_mood_default": "",
 "sound_moods": {},
 "style": ""
 },
-"default_portrait": "Standard",
+"default_portrait": "Angry",
 "description": "",
-"display_name": "Vice",
+"display_name": "Shale",
 "mirror": false,
 "nicknames": [""],
 "offset": Vector2(0, 0),
 "portraits": {
-"Standard": {
+"Angry": {
 "export_overrides": {
-"image": "\"res://Sprites/Vice/viceMug.png\""
+"image": "\"res://Sprites/Shale/shaleAngry.png\""
 },
 "image": "",
 "mirror": false,
